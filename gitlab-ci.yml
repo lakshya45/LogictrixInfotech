@@ -1,0 +1,54 @@
+image: node:10.5.0
+
+before_script:
+  - >-
+    echo " ------------------------------- Global > Before Script
+    ------------------------- ------"
+  - echo $CI_COMMIT_BRANCH
+  
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+stages:
+  - build
+  - test
+  - deploy
+before_script:
+  - npm install
+
+build-task-code-job:
+  stage: build
+
+  before_script:
+    - ls -la
+  only:
+    - master
+  script:
+    - npm run minifier
+      echo building
+
+run-unit-test-task-job:
+  stage: test
+  script:
+    - npm run test
+
+deploy-staging-task-job:
+  stage: deploy
+  script:
+    - npm run deploy-stage
+  only:
+    - develop
+
+deploy-production-task-job:
+  stage: deploy
+
+  before_script:
+    - pip install ecs-deploy
+  script:
+    - npm run deploy-prod
+  only:
+    - master
+  script:
+    - ecs deploy $CI_AWS_ECS_CLUSTER $CI_AWS_ECS_SERVICE -t $CI_COMMIT_SHORT_SHA --timeout 600
